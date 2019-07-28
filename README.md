@@ -4,12 +4,12 @@
 
 ### 初识 TypeScript
 
-+ [TypeScript特点](<https://github.com/youngle316/ts_demo/blob/master/docs/0_introduction.md>)
-+ [安装TypeScript](https://github.com/youngle316/ts_demo/blob/master/docs/0_introduction.md)
++ [TypeScript特点](<https://github.com/youngle316/ts_demo/blob/master/docs/introduction/introduction.md>)
++ [安装TypeScript](<https://github.com/youngle316/ts_demo/blob/master/docs/introduction/introduction.md>)
 
 
 
 ### TypeScript的常用语法
 
-+ [基础类型](<https://github.com/youngle316/ts_demo/blob/master/docs/1_type.md>)
++ [基础类型](<https://github.com/youngle316/ts_demo/blob/master/docs/type/type.md>)
 
