@@ -12,4 +12,5 @@
 ### TypeScript的常用语法
 
 + [基础类型](<https://github.com/youngle316/ts_demo/blob/master/docs/type/type.md>)
++ [接口](https://github.com/youngle316/ts_exercise/blob/master/docs/interface/interface.md)
 
