@@ -275,9 +275,192 @@ let myArray: ReadonlyStringArray = ['Alice', 'Bob'];
 myArray[2] = 'Mallory'; // error!
 ```
 
+## 类类型
 
+### 实现接口
 
+与 C# 或 Java 里接口的基本作用一样，TypeScript 也能够用它来明确的强制一个类去符合某种契约。
 
+```typescript
+interface ClockInterface {
+  currentTime: Date
+}
+
+class Clock implements ClockInterface {
+  currentTime: Date
+  constructor(h: number, m: number) { }
+}
+```
+
+你也可以在接口中描述一个方法，在类里实现它，如同下面的 `setTime` 方法一样：
+
+```typescript
+interface ClockInterface {
+  currentTime: Date
+  setTime(d: Date)
+}
+
+class Clock implements ClockInterface {
+  currentTime: Date
+  setTime(d: Date) {
+    this.currentTime = d
+  }
+  constructor(h: number, m: number) { }
+}
+```
+
+接口描述了类的公共部分，而不是公共和私有两部分。 它不会帮你检查类是否具有某些私有成员。
+
+### 类静态部分与实例部分的区别
+
+当你操作类和接口的时候，你要知道类是具有两个类型的：静态部分的类型和实例的类型。 你会注意到，当你用构造器签名去定义一个接口并试图定义一个类去实现这个接口时会得到一个错误：
+
+```typescript
+interface ClockConstructor {
+  new (hour: number, minute: number)
+}
+
+// error
+class Clock implements ClockConstructor {
+  currentTime: Date
+  constructor(h: number, m: number) { }
+}
+```
+
+这里因为当一个类实现了一个接口时，只对其实例部分进行类型检查。`constructor` 存在于类的静态部分，所以不在检查的范围内。
+
+看下面的例子，我们定义了两个接口， `ClockConstructor` 为构造函数所用和 `ClockInterface` 为实例方法所用。 为了方便我们定义一个构造函数 `createClock`，它用传入的类型创建实例。
+
+```typescript
+interface ClockConstructor {
+  new (hour: number, minute: number): ClockInterface
+}
+interface ClockInterface {
+  tick()
+}
+
+function createClock(ctor: ClockConstructor, hour: number, minute: number): ClockInterface {
+  return new ctor(hour, minute)
+}
+
+class DigitalClock implements ClockInterface {
+  constructor(h: number, m: number) { }
+  tick() {
+    console.log('beep beep')
+  }
+}
+class AnalogClock implements ClockInterface {
+  constructor(h: number, m: number) { }
+  tick() {
+    console.log('tick tock')
+  }
+}
+
+let digital = createClock(DigitalClock, 12, 17)
+let analog = createClock(AnalogClock, 7, 32)
+```
+
+因为 `createClock` 的第一个参数是 `ClockConstructor` 类型，在 `createClock(AnalogClock, 7, 32)` 里，会检查 `AnalogClock` 是否符合构造函数签名。
+
+## 继承接口
+
+和类一样，接口也可以相互继承。 这让我们能够从一个接口里复制成员到另一个接口里，可以更灵活地将接口分割到可重用的模块里。
+
+```typescript
+interface Shape {
+  color: string
+}
+
+interface Square extends Shape {
+  sideLength: number
+}
+
+let square = {} as Square
+square.color = 'blue'
+square.sideLength = 10
+```
+
+一个接口可以继承多个接口，创建出多个接口的合成接口。
+
+```typescript
+interface Shape {
+  color: string
+}
+
+interface PenStroke {
+  penWidth: number
+}
+
+interface Square extends Shape, PenStroke {
+  sideLength: number
+}
+
+let square = {} as Square
+square.color = 'blue'
+square.sideLength = 10
+square.penWidth = 5.0
+```
+
+## 混合类型
+
+先前我们提过，接口能够描述 JavaScript 里丰富的类型。 因为 JavaScript 其动态灵活的特点，有时你会希望一个对象可以同时具有上面提到的多种类型。
+
+一个例子就是，一个对象可以同时做为函数和对象使用，并带有额外的属性。
+
+```typescript
+interface Counter {
+  (start: number): string
+  interval: number
+  reset(): void
+}
+
+function getCounter(): Counter {
+  let counter = (function (start: number) { }) as Counter
+  counter.interval = 123
+  counter.reset = function () { }
+  return counter
+}
+
+let c = getCounter()
+c(10)
+c.reset()
+c.interval = 5.0
+```
+
+在使用 JavaScript 第三方库的时候，你可能需要像上面那样去完整地定义类型。这门课要重构的 `axios`库就是一个很好的例子。
+
+## 接口继承类
+
+当接口继承了一个类类型时，它会继承类的成员但不包括其实现。 就好像接口声明了所有类中存在的成员，但并没有提供具体实现一样。 接口同样会继承到类的 `private` 和 `protected` 成员。 这意味着当你创建了一个接口继承了一个拥有私有或受保护的成员的类时，这个接口类型只能被这个类或其子类所实现（implement）。
+
+当你有一个庞大的继承结构时这很有用，但要指出的是你的代码只在子类拥有特定属性时起作用。 这个子类除了继承至基类外与基类没有任何关系。例：
+
+```typescript
+class Control {
+  private state: any
+}
+
+interface SelectableControl extends Control {
+  select(): void
+}
+
+class Button extends Control implements SelectableControl {
+  select() { }
+}
+
+class TextBox extends Control {
+  select() { }
+}
+
+// Error：“ImageC”类型缺少“state”属性。
+class ImageC implements SelectableControl {
+  select() { }
+}
+```
+
+在上面的例子里，`SelectableControl` 包含了 `Control` 的所有成员，包括私有成员 `state`。 因为 `state` 是私有成员，所以只能够是 `Control` 的子类们才能实现 `SelectableControl` 接口。 因为只有 `Control` 的子类才能够拥有一个声明于`Control` 的私有成员 `state`，这对私有成员的兼容性是必需的。
+
+在 `Control` 类内部，是允许通过 `SelectableControl` 的实例来访问私有成员 `state` 的。 实际上，`SelectableControl` 接口和拥有 `select` 方法的 `Control` 类是一样的。`Button`和 `TextBox` 类是 `SelectableControl` 的子类（因为它们都继承自`Control` 并有 `select` 方法），但 `ImageC` 类并不是这样的。
 
 
 
